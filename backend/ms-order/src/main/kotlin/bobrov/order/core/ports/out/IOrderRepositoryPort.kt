@@ -11,8 +11,6 @@ interface IOrderRepositoryPort {
     fun findByOrderNumber(orderNumber: String): Order?
     fun findByCustomerId(customerId: UUID): List<Order>
     
-    // Novo método para salvar eventos
     fun saveEvent(event: OrderEvent): OrderEvent
-    // Novo método para buscar eventos não publicados
     fun findUnpublishedEvents(): List<OrderEvent>
 }

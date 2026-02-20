@@ -3,7 +3,6 @@ package bobrov.order.infrastructure.messaging.listener
 import bobrov.order.core.domain.Order
 import bobrov.order.core.domain.OrderCreatedEvent
 import bobrov.order.core.domain.OrderItem
-import bobrov.order.core.domain.OrderStatus
 import bobrov.order.core.ports.out.IOrderRepositoryPort
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.awspring.cloud.sqs.annotation.SqsListener
@@ -26,69 +25,50 @@ class OrderEventListener(
         logger.info("[LISTENER] Message received from SQS queue.")
         
         try {
-            // Parse do envelope SNS
             val snsEnvelope = objectMapper.readTree(message)
             val snsMessage = snsEnvelope.get("Message").asText()
             
             logger.debug("[LISTENER] Extracted SNS payload: {}", snsMessage)
             
-            // Parse do payload real (OrderCreatedEvent)
             val event = objectMapper.readValue(snsMessage, OrderCreatedEvent::class.java)
-            logger.info("[LISTENER] OrderCreatedEvent deserialized. OrderNumber: {}", event.orderNumber)
+            logger.info("[LISTENER] Order Request Event deserialized. Customer: {}", event.customerId)
 
-            // Verifica se o pedido já existe (Idempotência)
-            val existingOrder = orderRepository.findByOrderNumber(event.orderNumber)
-            if (existingOrder != null) {
-                logger.warn("[LISTENER] Order {} already exists in database. Ignoring duplicate processing.", event.orderNumber)
-                return
+            val orderNumberToCheck = event.orderNumber ?: ""
+            
+            if (orderNumberToCheck.isNotBlank()) {
+                val existingOrder = orderRepository.findByOrderNumber(orderNumberToCheck)
+                if (existingOrder != null) {
+                    logger.warn("[LISTENER] Order {} already exists. Ignoring.", orderNumberToCheck)
+                    return
+                }
             }
 
-            // Lógica simplificada de cálculo
-            val subtotal = event.items.sumOf { it.unitPrice.multiply(BigDecimal(it.quantity)) }
-            val totalAmount = event.totalAmount ?: subtotal
-
-            val order = Order(
-                orderNumber = event.orderNumber,
+            val rawOrder = Order(
+                orderNumber = event.orderNumber ?: "",
                 customerId = event.customerId,
-                subtotal = subtotal,
-                totalAmount = totalAmount,
                 shippingAddress = event.shippingAddress,
                 notes = event.notes,
-                metadata = event.metadata
+                metadata = event.metadata,
+                items = event.items.map { itemEvent ->
+                    OrderItem(
+                        productId = itemEvent.productId,
+                        productName = itemEvent.productName,
+                        productSku = itemEvent.productSku,
+                        productImage = itemEvent.productImage,
+                        quantity = itemEvent.quantity,
+                        unitPrice = itemEvent.unitPrice,
+                        discount = itemEvent.discount
+                    )
+                }.toMutableList()
             )
 
-            val items = event.items.map { itemEvent ->
-                OrderItem(
-                    productId = itemEvent.productId,
-                    productName = itemEvent.productName,
-                    productSku = itemEvent.productSku,
-                    productImage = itemEvent.productImage,
-                    quantity = itemEvent.quantity,
-                    unitPrice = itemEvent.unitPrice,
-                    discount = itemEvent.discount,
-                    subtotal = itemEvent.unitPrice.multiply(BigDecimal(itemEvent.quantity)).subtract(itemEvent.discount),
-                    attributes = itemEvent.attributes
-                )
-            }
-            
-            val initialStatus = OrderStatus(
-                statusType = "ORDER",
-                status = "PENDING",
-                isActive = true,
-                changedBy = "SYSTEM",
-                reason = "Order created via SQS"
-            )
+            val initializedOrder = rawOrder.initializeOrder()
 
-            order.items.addAll(items)
-            order.statuses.add(initialStatus)
-
-            val savedOrder = orderRepository.save(order)
-            logger.info("[LISTENER] Order saved successfully. ID: {}", savedOrder.id)
+            val savedOrder = orderRepository.save(initializedOrder)
+            logger.info("[LISTENER] Order processed and saved successfully. OrderNumber: {}, ID: {}", savedOrder.orderNumber, savedOrder.id)
             
         } catch (e: Exception) {
             logger.error("[LISTENER] Error processing SQS message: {}", e.message, e)
-            // Não relança a exceção para evitar loop infinito no SQS se for erro de negócio
-            // Em produção, deveria ir para DLQ
         }
     }
 }

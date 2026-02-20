@@ -1,11 +1,12 @@
 package bobrov.order.core.domain
 
+import bobrov.order.core.domain.enums.OrderEventType
 import java.time.LocalDateTime
 import java.util.UUID
 
 data class OrderEvent(
     val id: UUID? = null,
-    val eventType: String,
+    val eventType: OrderEventType,
     val aggregateType: String = "Order",
     val payload: Map<String, Any>,
     var published: Boolean = false,

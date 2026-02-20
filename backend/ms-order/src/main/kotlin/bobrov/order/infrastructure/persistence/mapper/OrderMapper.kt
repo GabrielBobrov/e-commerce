@@ -4,11 +4,13 @@ import bobrov.order.core.domain.Order
 import bobrov.order.core.domain.OrderEvent
 import bobrov.order.core.domain.OrderItem
 import bobrov.order.core.domain.OrderStatus
+import bobrov.order.core.domain.enums.ChangedBy
 import bobrov.order.infrastructure.persistence.entity.OrderEntity
 import bobrov.order.infrastructure.persistence.entity.OrderEventEntity
 import bobrov.order.infrastructure.persistence.entity.OrderItemEntity
 import bobrov.order.infrastructure.persistence.entity.OrderStatusEntity
 import org.springframework.stereotype.Component
+import java.util.UUID
 
 @Component
 class OrderMapper {
@@ -33,7 +35,7 @@ class OrderMapper {
             version = entity.version,
             items = entity.items.map { toDomain(it) }.toMutableList(),
             statuses = entity.statuses.map { toDomain(it) }.toMutableList(),
-            events = entity.events.map { toDomain(it) }.toMutableList()
+            events = mutableListOf() // Eventos agora são desacoplados
         )
     }
 
@@ -54,12 +56,19 @@ class OrderMapper {
     }
 
     private fun toDomain(entity: OrderStatusEntity): OrderStatus {
+        val changedByEnum = try {
+            entity.changedBy?.let { ChangedBy.valueOf(it) }
+        } catch (e: IllegalArgumentException) {
+            null
+        }
+
         return OrderStatus(
             id = entity.id,
             statusType = entity.statusType,
             status = entity.status,
             isActive = entity.isActive,
-            changedBy = entity.changedBy,
+            changedBy = changedByEnum,
+            changedByUserId = if (changedByEnum == null) entity.changedBy else null,
             reason = entity.reason,
             metadata = entity.metadata,
             createdAt = entity.createdAt
@@ -100,18 +109,14 @@ class OrderMapper {
             updatedAt = domain.updatedAt,
             version = domain.version
         )
-
-        // Mapeamento manual das listas para manter a referência bidirecional
-        domain.items.forEach {
+        
+        domain.items.forEach { 
             entity.items.add(toEntity(it, entity))
         }
-        domain.statuses.forEach {
+        domain.statuses.forEach { 
             entity.statuses.add(toEntity(it, entity))
         }
-        domain.events.forEach {
-            entity.events.add(toEntity(it, entity))
-        }
-
+        
         return entity
     }
 
@@ -133,23 +138,29 @@ class OrderMapper {
     }
 
     private fun toEntity(domain: OrderStatus, orderEntity: OrderEntity): OrderStatusEntity {
+        val changedByString = domain.changedBy?.name ?: domain.changedByUserId
+
         return OrderStatusEntity(
             id = domain.id,
             order = orderEntity,
             statusType = domain.statusType,
             status = domain.status,
             isActive = domain.isActive,
-            changedBy = domain.changedBy,
+            changedBy = changedByString,
             reason = domain.reason,
             metadata = domain.metadata,
             createdAt = domain.createdAt
         )
     }
 
-    private fun toEntity(domain: OrderEvent, orderEntity: OrderEntity): OrderEventEntity {
+    fun toEntity(domain: OrderEvent): OrderEventEntity {
+        // Extrai o orderId do payload se disponível, já que não temos o objeto Order aqui
+        val orderIdString = domain.payload["orderId"] as? String
+        val orderId = if (orderIdString != null) UUID.fromString(orderIdString) else null
+
         return OrderEventEntity(
             id = domain.id,
-            order = orderEntity,
+            orderId = orderId,
             eventType = domain.eventType,
             aggregateType = domain.aggregateType,
             payload = domain.payload,

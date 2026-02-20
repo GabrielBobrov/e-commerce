@@ -1,5 +1,6 @@
 package bobrov.order.infrastructure.persistence.entity
 
+import bobrov.order.core.domain.enums.OrderEventType
 import jakarta.persistence.*
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
@@ -13,12 +14,12 @@ data class OrderEventEntity(
     @GeneratedValue(strategy = GenerationType.UUID)
     val id: UUID? = null,
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "order_id", nullable = false)
-    val order: OrderEntity,
+    @Column(name = "order_id", nullable = true) // Agora é apenas um UUID, sem FK, e pode ser nulo se o pedido não existir ainda
+    val orderId: UUID? = null,
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "event_type", nullable = false)
-    val eventType: String,
+    val eventType: OrderEventType,
 
     @Column(name = "aggregate_type", nullable = false)
     val aggregateType: String = "Order",
@@ -45,10 +46,11 @@ data class OrderEventEntity(
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now()
 ) {
+    // Construtor sem argumentos para o Hibernate
     constructor() : this(
         id = null,
-        order = OrderEntity(),
-        eventType = "",
+        orderId = null,
+        eventType = OrderEventType.ORDER_CREATION_REQUESTED,
         payload = emptyMap()
     )
 }

@@ -2,6 +2,7 @@ package bobrov.order.entrypoint.mapper
 
 import bobrov.order.core.domain.Order
 import bobrov.order.core.domain.OrderItem
+import bobrov.order.core.domain.enums.OrderStatusType
 import bobrov.order.entrypoint.dto.CreateOrderRequest
 import bobrov.order.entrypoint.dto.OrderItemResponse
 import bobrov.order.entrypoint.dto.OrderResponse
@@ -38,7 +39,7 @@ class OrderEntrypointMapper {
     }
 
     fun toResponse(domain: Order): OrderResponse {
-        val currentStatus = domain.statuses.firstOrNull { it.isActive && it.statusType == "ORDER" }?.status
+        val currentStatus = domain.statuses.firstOrNull { it.isActive && it.statusType == OrderStatusType.ORDER }?.status?.name
         
         return OrderResponse(
             id = domain.id!!,

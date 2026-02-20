@@ -13,7 +13,12 @@ data class OrderItem(
     val quantity: Int,
     val unitPrice: BigDecimal,
     val discount: BigDecimal = BigDecimal.ZERO,
-    val subtotal: BigDecimal,
+    val subtotal: BigDecimal = BigDecimal.ZERO,
     val attributes: Map<String, Any>? = null,
     val createdAt: LocalDateTime = LocalDateTime.now()
-)
+) {
+    fun calculateSubtotal(): OrderItem {
+        val calculatedSubtotal = unitPrice.multiply(BigDecimal(quantity)).subtract(discount)
+        return this.copy(subtotal = calculatedSubtotal)
+    }
+}

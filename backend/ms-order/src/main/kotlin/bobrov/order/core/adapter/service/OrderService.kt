@@ -2,13 +2,12 @@ package bobrov.order.core.adapter.service
 
 import bobrov.order.core.domain.Order
 import bobrov.order.core.domain.OrderEvent
-import bobrov.order.core.domain.OrderStatus
+import bobrov.order.core.domain.enums.OrderEventType
 import bobrov.order.core.ports.`in`.IOrderServicePort
 import bobrov.order.core.ports.out.IOrderRepositoryPort
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.math.BigDecimal
 import java.util.UUID
 
 @Service
@@ -30,62 +29,39 @@ class OrderService(
 
     @Transactional
     override fun createOrder(order: Order) {
-        logger.info("[SERVICE] Starting order creation for customer: {}", order.customerId)
+        logger.info("[SERVICE] Received order creation request for customer: {}", order.customerId)
 
-        // Lógica simplificada de cálculo
-        val subtotal = order.items.sumOf { it.unitPrice.multiply(BigDecimal(it.quantity)) }
-        val totalAmount = subtotal // + tax + shipping - discount
+        val orderId = UUID.randomUUID() 
 
-        // Atualiza os itens com o subtotal calculado
-        val enrichedItems = order.items.map { item ->
-            item.copy(
-                subtotal = item.unitPrice.multiply(BigDecimal(item.quantity)).subtract(item.discount)
-            )
-        }.toMutableList()
-
-        // Atualiza o objeto de domínio com os valores calculados
-        val enrichedOrder = order.copy(
-            orderNumber = UUID.randomUUID().toString().substring(0, 8).uppercase(), // Exemplo simples
-            subtotal = subtotal,
-            totalAmount = totalAmount,
-            items = enrichedItems
-        )
-        
-        val initialStatus = OrderStatus(
-            statusType = "ORDER",
-            status = "PENDING",
-            isActive = true,
-            changedBy = "SYSTEM",
-            reason = "Order created"
-        )
-
-        enrichedOrder.statuses.add(initialStatus)
-
-        // Cria o evento de domínio (Outbox) com payload completo
         val eventPayload = mapOf(
-            "orderNumber" to enrichedOrder.orderNumber,
-            "customerId" to enrichedOrder.customerId.toString(),
-            "totalAmount" to enrichedOrder.totalAmount.toString(),
-            "shippingAddress" to enrichedOrder.shippingAddress,
-            "items" to enrichedOrder.items.map { 
+            "orderId" to orderId.toString(),
+            "customerId" to order.customerId.toString(),
+            "shippingAddress" to order.shippingAddress,
+            "notes" to (order.notes ?: ""),
+            "metadata" to (order.metadata ?: emptyMap<String, Any>()),
+            "items" to order.items.map { 
                 mapOf(
                     "productId" to it.productId.toString(),
                     "productName" to it.productName,
+                    "productSku" to it.productSku,
+                    "productImage" to (it.productImage ?: ""),
                     "quantity" to it.quantity,
-                    "unitPrice" to it.unitPrice
+                    "unitPrice" to it.unitPrice,
+                    "discount" to it.discount,
+                    "attributes" to (it.attributes ?: emptyMap<String, Any>())
                 )
             }
         )
 
         val event = OrderEvent(
-            eventType = "ORDER_CREATED",
+            id = UUID.randomUUID(),
+            eventType = OrderEventType.ORDER_CREATION_REQUESTED,
             payload = eventPayload,
             published = false
         )
         
-        enrichedOrder.events.add(event)
-
-        val savedOrder = orderRepository.save(enrichedOrder)
-        logger.info("[SERVICE] Order and Event saved successfully. ID: {}", savedOrder.id)
+        orderRepository.saveEvent(event)
+        
+        logger.info("[SERVICE] Order Request Event saved successfully. Event ID: {}", event.id)
     }
 }

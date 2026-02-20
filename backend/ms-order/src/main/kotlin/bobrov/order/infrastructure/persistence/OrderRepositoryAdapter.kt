@@ -51,19 +51,12 @@ class OrderRepositoryAdapter(
     }
 
     override fun saveEvent(event: OrderEvent): OrderEvent {
-        if (event.id != null) {
-            logger.debug("[REPOSITORY] Updating event status. ID: {}, Published: {}", event.id, event.published)
-            val entity = orderEventJpaRepository.findById(event.id).orElseThrow()
-            entity.published = event.published
-            entity.publishedAt = event.publishedAt
-            entity.snsMessageId = event.snsMessageId
-            entity.retryCount = event.retryCount
-            entity.lastError = event.lastError
-            
-            val saved = orderEventJpaRepository.save(entity)
-            return orderMapper.toDomain(saved)
-        }
-        return event
+        logger.debug("[REPOSITORY] Saving event. ID: {}, Published: {}", event.id, event.published)
+        
+        val entity = orderMapper.toEntity(event)
+        val savedEntity = orderEventJpaRepository.save(entity)
+        
+        return orderMapper.toDomain(savedEntity)
     }
 
     override fun findUnpublishedEvents(): List<OrderEvent> {
