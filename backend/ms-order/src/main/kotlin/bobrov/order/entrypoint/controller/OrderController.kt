@@ -1,6 +1,7 @@
 package bobrov.order.entrypoint.controller
 
 import bobrov.order.core.ports.`in`.IOrderServicePort
+import bobrov.order.entrypoint.constants.UrlConstants
 import bobrov.order.entrypoint.dto.CreateOrderRequest
 import bobrov.order.entrypoint.dto.OrderResponse
 import bobrov.order.entrypoint.mapper.OrderEntrypointMapper
@@ -10,7 +11,6 @@ import org.springframework.web.bind.annotation.*
 import java.util.UUID
 
 @RestController
-@RequestMapping("/api/orders")
 class OrderController(
     private val orderService: IOrderServicePort,
     private val orderEntrypointMapper: OrderEntrypointMapper
@@ -18,7 +18,7 @@ class OrderController(
 
     private val logger = LoggerFactory.getLogger(OrderController::class.java)
 
-    @GetMapping
+    @GetMapping(UrlConstants.ORDERS_V1)
     fun getAllOrders(): List<OrderResponse> {
         logger.info("[CONTROLLER] Request received to list all orders.")
         val orders = orderService.getAllOrders().map { orderEntrypointMapper.toResponse(it) }
@@ -26,7 +26,7 @@ class OrderController(
         return orders
     }
 
-    @GetMapping("/{id}")
+    @GetMapping(UrlConstants.ORDERS_BY_ID_V1)
     fun getOrderById(@PathVariable id: UUID): OrderResponse {
         logger.info("[CONTROLLER] Request received to get order by ID: {}", id)
         val order = orderService.getOrderById(id)
@@ -34,7 +34,7 @@ class OrderController(
         return orderEntrypointMapper.toResponse(order)
     }
 
-    @PostMapping
+    @PostMapping(UrlConstants.ORDERS_V1)
     @ResponseStatus(HttpStatus.CREATED)
     fun createOrder(@RequestBody request: CreateOrderRequest) {
         logger.info("[CONTROLLER] Request received to create order for customer: {}", request.customerId)
