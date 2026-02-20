@@ -23,23 +23,23 @@ class OrderEventListener(
     @SqsListener("order-events-queue")
     @Transactional
     fun receiveOrderEvent(message: String) {
-        logger.info("[LISTENER] Mensagem recebida da fila SQS.")
+        logger.info("[LISTENER] Message received from SQS queue.")
         
         try {
             // Parse do envelope SNS
             val snsEnvelope = objectMapper.readTree(message)
             val snsMessage = snsEnvelope.get("Message").asText()
             
-            logger.debug("[LISTENER] Payload SNS extraído: {}", snsMessage)
+            logger.debug("[LISTENER] Extracted SNS payload: {}", snsMessage)
             
             // Parse do payload real (OrderCreatedEvent)
             val event = objectMapper.readValue(snsMessage, OrderCreatedEvent::class.java)
-            logger.info("[LISTENER] Evento OrderCreatedEvent desserializado. OrderNumber: {}", event.orderNumber)
+            logger.info("[LISTENER] OrderCreatedEvent deserialized. OrderNumber: {}", event.orderNumber)
 
             // Verifica se o pedido já existe (Idempotência)
             val existingOrder = orderRepository.findByOrderNumber(event.orderNumber)
             if (existingOrder != null) {
-                logger.warn("[LISTENER] Pedido {} já existe no banco. Ignorando processamento duplicado.", event.orderNumber)
+                logger.warn("[LISTENER] Order {} already exists in database. Ignoring duplicate processing.", event.orderNumber)
                 return
             }
 
@@ -83,10 +83,10 @@ class OrderEventListener(
             order.statuses.add(initialStatus)
 
             val savedOrder = orderRepository.save(order)
-            logger.info("[LISTENER] Pedido salvo no banco com sucesso. ID: {}", savedOrder.id)
+            logger.info("[LISTENER] Order saved successfully. ID: {}", savedOrder.id)
             
         } catch (e: Exception) {
-            logger.error("[LISTENER] Erro ao processar mensagem SQS: {}", e.message, e)
+            logger.error("[LISTENER] Error processing SQS message: {}", e.message, e)
             // Não relança a exceção para evitar loop infinito no SQS se for erro de negócio
             // Em produção, deveria ir para DLQ
         }

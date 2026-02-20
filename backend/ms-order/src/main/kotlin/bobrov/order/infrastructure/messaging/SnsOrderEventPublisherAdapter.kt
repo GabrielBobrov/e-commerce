@@ -17,12 +17,12 @@ class SnsOrderEventPublisherAdapter(
     private val logger = LoggerFactory.getLogger(SnsOrderEventPublisherAdapter::class.java)
 
     override fun publish(event: OrderCreatedEvent) {
-        logger.info("[PUBLISHER] Publicando evento no SNS. Topic: {}, OrderNumber: {}", topicArn, event.orderNumber)
+        logger.info("[PUBLISHER] Publishing event to SNS. Topic: {}, OrderNumber: {}", topicArn, event.orderNumber)
         try {
             snsTemplate.convertAndSend(topicArn, event)
-            logger.info("[PUBLISHER] Evento enviado com sucesso.")
+            logger.info("[PUBLISHER] Event sent successfully.")
         } catch (e: Exception) {
-            logger.error("[PUBLISHER] Erro ao publicar evento no SNS: {}", e.message, e)
+            logger.error("[PUBLISHER] Error publishing event to SNS: {}", e.message, e)
             throw e
         }
     }

@@ -30,7 +30,7 @@ class OrderService(
 
     @Transactional
     override fun createOrder(order: Order) {
-        logger.info("[SERVICE] Iniciando criação de pedido para cliente: {}", order.customerId)
+        logger.info("[SERVICE] Starting order creation for customer: {}", order.customerId)
 
         // Lógica simplificada de cálculo
         val subtotal = order.items.sumOf { it.unitPrice.multiply(BigDecimal(it.quantity)) }
@@ -86,6 +86,6 @@ class OrderService(
         enrichedOrder.events.add(event)
 
         val savedOrder = orderRepository.save(enrichedOrder)
-        logger.info("[SERVICE] Pedido e Evento salvos no banco com sucesso. ID: {}", savedOrder.id)
+        logger.info("[SERVICE] Order and Event saved successfully. ID: {}", savedOrder.id)
     }
 }

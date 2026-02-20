@@ -26,7 +26,7 @@ class OrderEventPublisherScheduler(
         val pendingEvents = orderRepository.findUnpublishedEvents()
         
         if (pendingEvents.isNotEmpty()) {
-            logger.info("[SCHEDULER] Encontrados {} eventos pendentes de publicação.", pendingEvents.size)
+            logger.info("[SCHEDULER] Found {} pending events to publish.", pendingEvents.size)
             
             pendingEvents.forEach { event ->
                 try {
@@ -56,9 +56,9 @@ class OrderEventPublisherScheduler(
                     event.publishedAt = LocalDateTime.now()
                     orderRepository.saveEvent(event)
                     
-                    logger.info("[SCHEDULER] Evento {} publicado com sucesso.", event.id)
+                    logger.info("[SCHEDULER] Event {} published successfully.", event.id)
                 } catch (e: Exception) {
-                    logger.error("[SCHEDULER] Erro ao publicar evento {}: {}", event.id, e.message)
+                    logger.error("[SCHEDULER] Error publishing event {}: {}", event.id, e.message)
                     event.retryCount++
                     event.lastError = e.message
                     orderRepository.saveEvent(event)
