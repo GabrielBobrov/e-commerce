@@ -7,6 +7,5 @@ import java.util.UUID
 
 @Repository
 interface OrderEventJpaRepository : JpaRepository<OrderEventEntity, UUID> {
-    // Busca os 10 primeiros eventos não publicados, ordenados pelos mais antigos
     fun findTop10ByPublishedFalseOrderByCreatedAtAsc(): List<OrderEventEntity>
 }

@@ -31,15 +31,17 @@ class OrderService(
     override fun createOrder(order: Order) {
         logger.info("[SERVICE] Received order creation request for customer: {}", order.customerId)
 
-        val orderId = UUID.randomUUID() 
+        val orderId = UUID.randomUUID()
+        val orderNumber = order.orderNumber.ifBlank { UUID.randomUUID().toString().substring(0, 8).uppercase() }
 
         val eventPayload = mapOf(
             "orderId" to orderId.toString(),
+            "orderNumber" to orderNumber,
             "customerId" to order.customerId.toString(),
             "shippingAddress" to order.shippingAddress,
             "notes" to (order.notes ?: ""),
             "metadata" to (order.metadata ?: emptyMap<String, Any>()),
-            "items" to order.items.map { 
+            "items" to order.items.map {
                 mapOf(
                     "productId" to it.productId.toString(),
                     "productName" to it.productName,
@@ -55,13 +57,14 @@ class OrderService(
 
         val event = OrderEvent(
             id = UUID.randomUUID(),
+            orderId = orderId,
             eventType = OrderEventType.ORDER_CREATION_REQUESTED,
             payload = eventPayload,
             published = false
         )
-        
+
         orderRepository.saveEvent(event)
-        
-        logger.info("[SERVICE] Order Request Event saved successfully. Event ID: {}", event.id)
+
+        logger.info("[SERVICE] Order Request Event saved successfully for future Order ID: {}. Event ID: {}", orderId, event.id)
     }
 }

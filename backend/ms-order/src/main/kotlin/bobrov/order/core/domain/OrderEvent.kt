@@ -6,6 +6,7 @@ import java.util.UUID
 
 data class OrderEvent(
     val id: UUID? = null,
+    val orderId: UUID,
     val eventType: OrderEventType,
     val aggregateType: String = "Order",
     val payload: Map<String, Any>,

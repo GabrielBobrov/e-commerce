@@ -58,7 +58,7 @@ Responsável por implementar as interfaces definidas nas portas de saída (`out`
 
 ## Tecnologias Utilizadas
 
-Baseado no `pom.xml`:
+Baseado no `.xml`:
 - **Kotlin 1.9** (Java 17)
 - **Spring Boot 3.2.2** (Web, Data JPA, Validation)
 - **Banco de Dados**: PostgreSQL 16 (com Flyway para migrações)

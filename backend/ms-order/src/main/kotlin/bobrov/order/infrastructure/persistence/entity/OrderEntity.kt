@@ -64,10 +64,7 @@ data class OrderEntity(
     val items: MutableList<OrderItemEntity> = mutableListOf(),
 
     @OneToMany(mappedBy = "order", cascade = [CascadeType.ALL], orphanRemoval = true)
-    val statuses: MutableList<OrderStatusEntity> = mutableListOf(),
-
-    @OneToMany(mappedBy = "order", cascade = [CascadeType.ALL], orphanRemoval = true)
-    val events: MutableList<OrderEventEntity> = mutableListOf()
+    val statuses: MutableList<OrderStatusEntity> = mutableListOf()
 ) {
     constructor() : this(
         id = null,

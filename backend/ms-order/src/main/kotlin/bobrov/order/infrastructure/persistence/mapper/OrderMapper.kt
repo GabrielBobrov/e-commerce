@@ -78,6 +78,7 @@ class OrderMapper {
     fun toDomain(entity: OrderEventEntity): OrderEvent {
         return OrderEvent(
             id = entity.id,
+            orderId = entity.orderId,
             eventType = entity.eventType,
             aggregateType = entity.aggregateType,
             payload = entity.payload,
@@ -154,13 +155,9 @@ class OrderMapper {
     }
 
     fun toEntity(domain: OrderEvent): OrderEventEntity {
-        // Extrai o orderId do payload se disponível, já que não temos o objeto Order aqui
-        val orderIdString = domain.payload["orderId"] as? String
-        val orderId = if (orderIdString != null) UUID.fromString(orderIdString) else null
-
         return OrderEventEntity(
             id = domain.id,
-            orderId = orderId,
+            orderId = domain.orderId,
             eventType = domain.eventType,
             aggregateType = domain.aggregateType,
             payload = domain.payload,

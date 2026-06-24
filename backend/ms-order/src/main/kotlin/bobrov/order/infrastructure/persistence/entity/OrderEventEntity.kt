@@ -14,8 +14,8 @@ data class OrderEventEntity(
     @GeneratedValue(strategy = GenerationType.UUID)
     val id: UUID? = null,
 
-    @Column(name = "order_id", nullable = true) // Agora é apenas um UUID, sem FK, e pode ser nulo se o pedido não existir ainda
-    val orderId: UUID? = null,
+    @Column(name = "order_id", nullable = false)
+    val orderId: UUID,
 
     @Enumerated(EnumType.STRING)
     @Column(name = "event_type", nullable = false)
@@ -49,7 +49,7 @@ data class OrderEventEntity(
     // Construtor sem argumentos para o Hibernate
     constructor() : this(
         id = null,
-        orderId = null,
+        orderId = UUID.randomUUID(),
         eventType = OrderEventType.ORDER_CREATION_REQUESTED,
         payload = emptyMap()
     )

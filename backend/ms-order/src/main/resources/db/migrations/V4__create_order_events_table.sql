@@ -4,7 +4,7 @@
 CREATE TABLE order_events
 (
     id             UUID PRIMARY KEY     DEFAULT gen_random_uuid(),
-    order_id       UUID        NOT NULL REFERENCES orders (id),
+    order_id       UUID        NOT NULL, -- Este ID será usado para criar o pedido posteriormente
     event_type     VARCHAR(50) NOT NULL, -- ORDER_CREATED, ORDER_CONFIRMED, etc.
     aggregate_type VARCHAR(50) NOT NULL DEFAULT 'Order',
     payload        JSONB       NOT NULL, -- Dados completos do evento
@@ -13,10 +13,7 @@ CREATE TABLE order_events
     sns_message_id VARCHAR(100),
     retry_count    INTEGER     NOT NULL DEFAULT 0,
     last_error     TEXT,
-    created_at     TIMESTAMP   NOT NULL DEFAULT NOW(),
-
-    -- Limita o número de tentativas de publicação do evento
-    CONSTRAINT chk_order_events_max_retries CHECK (retry_count <= 5)
+    created_at     TIMESTAMP   NOT NULL DEFAULT NOW()
 );
 
 -- Índice para busca por pedido

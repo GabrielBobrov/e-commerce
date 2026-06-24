@@ -13,7 +13,7 @@
     </parent>
 
     <groupId>bobrov</groupId>
-    <artifactId>payment</artifactId>
+    <artifactId>ms-order</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>ms-order</name>
     <description>ms-order</description>
