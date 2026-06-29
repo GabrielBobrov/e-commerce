@@ -1,0 +1,18 @@
+# Ignora arquivos e diretórios do Git
+.git
+.gitignore
+.gitattributes
+
+# Ignora arquivos de configuração do IDE
+.idea
+*.iml
+
+# Ignora o diretório de build do Maven, pois ele será gerado dentro do contêiner
+target/
+
+# Ignora logs e outros arquivos temporários
+*.log
+.DS_Store
+
+# Ignora a pasta do Terraform
+terraform/

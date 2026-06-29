@@ -29,19 +29,15 @@ data class Order(
     val events: MutableList<OrderEvent> = mutableListOf()
 ) {
     fun initializeOrder(): Order {
-        // 1. Calcular subtotais dos itens
         val calculatedItems = items.map { it.calculateSubtotal() }.toMutableList()
         
-        // 2. Calcular totais do pedido
         val newSubtotal = calculatedItems.sumOf { it.subtotal }
         val newTotalAmount = newSubtotal.add(tax).add(shippingFee).subtract(discount)
         
-        // 3. Gerar Order Number se vazio
         val newOrderNumber = orderNumber.ifBlank {
             UUID.randomUUID().toString().substring(0, 8).uppercase()
         }
 
-        // 4. Adicionar status inicial
         val initialStatus = OrderStatus(
             statusType = OrderStatusType.ORDER,
             status = OrderState.PENDING,

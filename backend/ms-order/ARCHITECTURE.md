@@ -27,8 +27,9 @@ bobrov.order
 │   ├── exception       # Tratamento global de exceções (ControllerAdvice)
 │   └── constants       # Constantes de API (URLs, etc.)
 └── infrastructure      # Adaptadores de Saída (Driven Adapters)
-    ├── persistence     # Implementações de persistência
+    ├── persistence     # Implementações de persistência (JPA, Cache)
     │   ├── entity      # Entidades JPA/Banco de dados
+    │   ├── cache       # Modelos e mappers para o cache Redis
     │   ├── mapper      # Mapeadores Entidade <-> Domínio
     │   └── ...         # Repositórios JPA e Adaptadores
     ├── messaging       # Implementações de mensageria (Publishers e Listeners)
@@ -52,7 +53,7 @@ Responsável por receber as requisições externas e convertê-las para o format
 
 ### Infrastructure (Infraestrutura)
 Responsável por implementar as interfaces definidas nas portas de saída (`out`) do domínio.
-- **Persistence**: Implementação de repositórios usando Spring Data JPA e Hibernate.
+- **Persistence**: Implementação de repositórios usando Spring Data JPA, Hibernate e cache com Redis.
 - **Messaging**: Implementações para comunicação assíncrona com AWS SNS e SQS.
 - **Scheduler**: Implementação do padrão Transactional Outbox.
 
@@ -60,8 +61,9 @@ Responsável por implementar as interfaces definidas nas portas de saída (`out`
 
 Baseado no `.xml`:
 - **Kotlin 1.9** (Java 17)
-- **Spring Boot 3.2.2** (Web, Data JPA, Validation)
+- **Spring Boot 3.2.2** (Web, Data JPA, Data Redis, Validation)
 - **Banco de Dados**: PostgreSQL 16 (com Flyway para migrações)
+- **Cache**: Redis 7
 - **Mensageria/Cloud**: Spring Cloud AWS 3.1.0 (SNS, SQS)
 - **Infraestrutura Local**: Docker, Docker Compose, LocalStack
 - **IaC**: Terraform
@@ -75,7 +77,7 @@ Baseado no `.xml`:
 3. O Controller invoca uma Porta de Entrada (`core.ports.in`).
 4. A implementação da porta (`core.adapter.service`) executa a lógica de negócio.
 5. Se necessário, o domínio invoca uma Porta de Saída (`core.ports.out`) para buscar ou persistir dados.
-6. A **Infrastructure** implementa essa porta de saída (ex: Repositório JPA) e acessa o banco de dados.
+6. A **Infrastructure** implementa essa porta de saída (ex: Repositório JPA) e acessa o banco de dados (ou o cache Redis).
 7. O resultado retorna através das camadas até ser enviado de volta ao cliente pelo Controller.
 
 ## Fluxo Assíncrono (Transactional Outbox)

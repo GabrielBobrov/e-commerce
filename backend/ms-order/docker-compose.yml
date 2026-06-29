@@ -1,6 +1,28 @@
 version: '3.8'
 
 services:
+  api:
+    build: .
+    container_name: ms-order-api
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/order_db
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_CLOUD_AWS_ENDPOINT_OVERRIDE: http://localstack:4566
+      SPRING_CLOUD_AWS_SQS_ENDPOINT: http://localstack:4566
+      SPRING_CLOUD_AWS_SNS_ENDPOINT: http://localstack:4566 # Configuração específica para o SNS
+      SPRING_CLOUD_AWS_CREDENTIALS_PROVIDER: anonymous
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      localstack:
+        condition: service_started
+    networks:
+      - ecommerce-network
+
   db:
     image: postgres:16
     container_name: postgres-db
@@ -17,6 +39,14 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - ecommerce-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis-cache
+    ports:
+      - "6379:6379"
     networks:
       - ecommerce-network
 
