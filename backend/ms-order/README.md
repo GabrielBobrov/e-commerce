@@ -25,53 +25,67 @@ Toda a documentação técnica, incluindo arquitetura, fluxos de dados, exemplos
 
 ## 🛠️ Como Rodar Localmente (Método Recomendado)
 
-Com esta abordagem, a aplicação e toda a sua infraestrutura (Banco de Dados, Cache, Mensageria) rodam em contêineres Docker.
+O ambiente é totalmente containerizado. O fluxo de inicialização é dividido em etapas para garantir que a infraestrutura esteja pronta antes da API iniciar.
 
 ### Pré-requisitos
 
 *   Docker e Docker Compose
-*   Terraform (para criar os recursos da "AWS" local)
+*   Terraform
 *   AWS CLI (opcional, para interagir com o LocalStack)
 
-### Passo 1: Subir todo o ambiente com Docker Compose
+### Passo 1: Subir a Infraestrutura Base
 
-Na raiz do projeto, execute o comando:
+Primeiro, vamos iniciar apenas os serviços de infraestrutura (Banco de Dados, Cache e o simulador da AWS).
 
+Na raiz do projeto, execute:
 ```bash
-docker-compose up --build
+docker-compose up -d db redis localstack
 ```
-
-Este único comando irá:
-1.  Construir a imagem Docker da sua API a partir do `Dockerfile`.
-2.  Iniciar os contêineres da **API**, **PostgreSQL**, **Redis** e **LocalStack**.
-3.  Conectar todos os serviços em uma rede interna.
-
-Deixe este terminal rodando para acompanhar os logs de todos os serviços.
+O `-d` (detached) sobe os contêineres em segundo plano. Aguarde alguns segundos para que eles iniciem completamente.
 
 ### Passo 2: Criar os Recursos da AWS com Terraform
 
-O LocalStack sobe "vazio". Use o Terraform para criar o tópico SNS e a fila SQS. **Abra um novo terminal** e execute:
+Com o LocalStack no ar, vamos criar os recursos de mensageria (SNS/SQS) dentro dele.
 
 ```bash
 # 1. Navegue até a pasta do Terraform
 cd terraform
 
-# 2. Inicialize o Terraform (apenas na primeira vez)
+# 2. Crie e selecione o workspace local (apenas na primeira vez)
+terraform workspace new local
+
+# 3. Inicialize o Terraform (apenas na primeira vez)
 terraform init
 
-# 3. Crie os recursos no LocalStack
-terraform apply -auto-approve
+# 4. Aplique a configuração para criar os recursos
+terraform apply -var="db_password=paymentpass"
 ```
+Ao final, digite `yes` para confirmar. Isso criará o tópico SNS e as filas SQS no LocalStack.
 
-Após alguns segundos, você verá nos logs do `docker-compose` que a API conseguiu publicar os eventos com sucesso. A aplicação estará disponível em `http://localhost:8080`.
+### Passo 3: Subir a Aplicação
+
+Agora que toda a infraestrutura está pronta e configurada, podemos iniciar a API.
+
+Na raiz do projeto, execute:
+```bash
+docker-compose up -d --build api
+```
+Este comando irá construir a imagem da API (se necessário) e iniciá-la. Como os outros serviços já estão rodando, a API se conectará a eles com sucesso.
+
+A aplicação estará disponível em `http://localhost:8080`.
+
+### Para Parar o Ambiente
+
+Para parar todos os contêineres, execute:
+```bash
+docker-compose down
+```
 
 ---
 
 ## 📖 Como Rodar para Desenvolvimento (Alternativa)
 
-Se você precisa fazer debug da aplicação diretamente pela sua IDE, pode rodar a API localmente e usar o Docker Compose apenas para a infraestrutura.
+Se você precisa fazer debug da aplicação diretamente pela sua IDE:
 
-1.  **Comente o serviço `api`** no arquivo `docker-compose.yml`.
-2.  Suba a infraestrutura: `docker-compose up -d`.
-3.  Crie os recursos com o Terraform (mesmo passo anterior).
-4.  Rode a aplicação pela sua IDE ou com o comando `./mvnw spring-boot:run`.
+1.  Execute o **Passo 1** e o **Passo 2** acima para ter a infraestrutura no ar.
+2.  Rode a aplicação pela sua IDE ou com o comando `./mvnw spring-boot:run`. A API local se conectará aos serviços que estão rodando nos contêineres.
