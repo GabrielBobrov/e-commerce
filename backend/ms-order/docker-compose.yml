@@ -7,12 +7,21 @@ services:
     ports:
       - "8080:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/order_db
-      SPRING_DATA_REDIS_HOST: redis
-      SPRING_CLOUD_AWS_ENDPOINT_OVERRIDE: http://localstack:4566
-      SPRING_CLOUD_AWS_SQS_ENDPOINT: http://localstack:4566
-      SPRING_CLOUD_AWS_SNS_ENDPOINT: http://localstack:4566 # Configuração específica para o SNS
+      # --- Banco de Dados ---
+      SPRING_DATASOURCE_URL: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+
+      # --- Redis ---
+      SPRING_DATA_REDIS_HOST: ${REDIS_HOST}
+      SPRING_DATA_REDIS_PORT: ${REDIS_PORT}
+
+      # --- AWS / LocalStack ---
+      SPRING_CLOUD_AWS_ENDPOINT_OVERRIDE: http://${LOCALSTACK_HOST}:${LOCALSTACK_PORT}
+      SPRING_CLOUD_AWS_SQS_ENDPOINT: http://${LOCALSTACK_HOST}:${LOCALSTACK_PORT}
+      SPRING_CLOUD_AWS_SNS_ENDPOINT: http://${LOCALSTACK_HOST}:${LOCALSTACK_PORT}
       SPRING_CLOUD_AWS_CREDENTIALS_PROVIDER: anonymous
+      AWS_SNS_TOPIC_ORDER-EVENTS: ${ORDER_EVENTS_TOPIC_ARN}
     depends_on:
       db:
         condition: service_healthy
@@ -27,15 +36,15 @@ services:
     image: postgres:16
     container_name: postgres-db
     environment:
-      POSTGRES_USER: paymentuser
-      POSTGRES_PASSWORD: paymentpass
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
       - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U paymentuser"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -54,8 +63,8 @@ services:
     image: localstack/localstack:3.0
     container_name: ms-order-localstack
     ports:
-      - "4566:4566"            # LocalStack Gateway
-      - "4510-4559:4510-4559"  # external services port range
+      - "${LOCALSTACK_PORT}:${LOCALSTACK_PORT}" # Expõe a porta do LocalStack
+      - "4510-4559:4510-4559"
     environment:
       - SERVICES=sns,sqs
       - DEBUG=1
