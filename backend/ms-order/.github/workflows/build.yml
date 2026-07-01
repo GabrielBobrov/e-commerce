@@ -1,0 +1,49 @@
+# .github/workflows/build.yml
+
+# Nome do Workflow que aparecerá na aba "Actions" do GitHub
+name: Build and Test Application
+
+# Define os gatilhos que acionam a pipeline
+on:
+  # Aciona a cada push para a branch 'master'
+  push:
+    branches: [ "master" ]
+  # Aciona a cada Pull Request aberto para a branch 'master'
+  pull_request:
+    branches: [ "master" ]
+
+# Define os "jobs" (trabalhos) que a pipeline irá executar
+jobs:
+  # Nome do job
+  build:
+    # Define a máquina virtual onde o job irá rodar
+    runs-on: ubuntu-latest
+
+    # Define os passos sequenciais do job
+    steps:
+      # 1. Checkout do Código
+      # Baixa o código do seu repositório para a máquina virtual
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Setup do Java (JDK)
+      # Instala e configura a versão 17 do Java (Temurin)
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven' # Ativa o cache de dependências do Maven para builds mais rápidos
+
+      # 3. Build com Maven
+      # Executa o comando de build e teste do Maven
+      - name: Build with Maven
+        run: mvn clean install
+
+        # O comando 'mvn clean install' irá:
+        # - Limpar o projeto
+        # - Baixar as dependências (usando o cache se possível)
+        # - Compilar o código
+        # - Rodar os testes unitários
+        # - Empacotar a aplicação em um arquivo .jar
+        # Se qualquer passo falhar, a pipeline inteira falhará.
